@@ -72,7 +72,7 @@ public class GameMapRsyncLoop extends GameFrameLoop {
   }
 
   // 同步聊天
-  public void syncComment(PlayerData playerData, Comment comment) throws InterruptedException {
+  public void syncComment(PlayerData playerData, Comment comment) {
     var mapData = playersData.get(playerData.id);
     if(mapData == null){
       return;
@@ -80,7 +80,11 @@ public class GameMapRsyncLoop extends GameFrameLoop {
     if(mapData.comments.size() == MAX_COMMENTS){
       return;
     }
-    mapData.comments.put(comment);
+    try {
+      mapData.comments.put(comment);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 
   /**
@@ -123,8 +127,8 @@ public class GameMapRsyncLoop extends GameFrameLoop {
    * 玩家发言
    */
   public static class Comment{
-    COMMENT_TYPE type;
-    String content;
+    public COMMENT_TYPE type;
+    public String content;
   }
 
   /**
@@ -183,7 +187,7 @@ public class GameMapRsyncLoop extends GameFrameLoop {
     movePlayerRect(data);
     broadRoleInfo(data); // 广播信息
     broadPosition(data); // 广播位置
-
+    broadComment(data);
   }
 
   private void broadComment(PlayerMapData data){

@@ -26,7 +26,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
                 GameProtocol protocol = GameCode.decodeToGameProtocolFromJsonMessage(jm);
                 var onlineContext = OnlineManager.getInstance().getCtx(ctx.channel());
                 // 拦截非登录情况的违法请求(这里有必要吗？
-                if(!onlineContext.isLogin() && !name.equals("CLogin")){
+                if(!HandlerManager.getInstance().validate(onlineContext, name)){
                     return;
                 }
                 System.out.println("[info] receive msg "+protocol.toString());
