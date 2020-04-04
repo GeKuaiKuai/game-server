@@ -1,0 +1,31 @@
+plugins {
+    id 'groovy'
+    id 'java'
+}
+
+group 'game server'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 11
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    // https://mvnrepository.com/artifact/io.netty/netty-all
+    compile group: 'io.netty', name: 'netty-all', version: '4.1.46.Final'
+
+    // https://mvnrepository.com/artifact/com.alibaba/fastjson
+    compile group: 'com.alibaba', name: 'fastjson', version: '1.2.47'
+
+    // https://mvnrepository.com/artifact/io.github.classgraph/classgraph
+    compile group: 'io.github.classgraph', name: 'classgraph', version: '4.8.65'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
