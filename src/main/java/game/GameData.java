@@ -1,11 +1,7 @@
 package game;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import protocol.GameProtocol;
-import protocol.NotifyPlayerPosition;
-import protocol.NotifyRoleInfo;
-
-import java.util.*;
 
 public class GameData {
 
@@ -19,6 +15,8 @@ public class GameData {
     private Map<String, UniqueData> weaponData = new ConcurrentHashMap<>();
 
     private Map<String, UniqueData> equipData = new ConcurrentHashMap<>();
+
+    private Map<String, BattleInfo> battleInfoMap = new ConcurrentHashMap<>();
 
     public static GameData getInstance(){
         return instance;
@@ -34,6 +32,11 @@ public class GameData {
 
     public boolean isExistID(String id){
         return  playersData.containsKey(id);
+    }
+
+    public BattleInfo getBattleInfo(String battleName){
+        battleInfoMap.putIfAbsent(battleName, new BattleInfo());
+        return battleInfoMap.get(battleName);
     }
 
 

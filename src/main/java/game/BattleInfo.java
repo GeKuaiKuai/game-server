@@ -14,9 +14,12 @@ public class BattleInfo {
     }
   }
 
+  public List<BattleComment> getComment(){
+    return commentList;
+  }
+
   public static class BattleComment{
-    public int time; //单位s
-    public String name;
+    public long time; //单位s
     public String content;
   }
 }
