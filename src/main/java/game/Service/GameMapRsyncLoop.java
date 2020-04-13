@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class GameMapRsyncLoop extends GameFrameLoop {
-  protected long EXE_PERIOD = 500;
+  protected long EXE_PERIOD = 100;
   private final static int MAX_ROW = 40;
   private final static int MAX_COL = 40;
   private final static int OFF = 1; // 在格子距离为1的范围内同步
