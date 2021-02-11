@@ -1,0 +1,10 @@
+[2020-05-14 23:37:18] [INFO] [Main] [line:12] [main] -> Dream Fight Server start boot.
+[2020-05-14 23:37:18] [INFO] [game.Service.GameStoreLoop] [line:100] [load] -> user num is 62
+[2020-05-14 23:37:18] [INFO] [game.Service.GameStoreLoop] [line:101] [load] -> battle comment num is 31
+[2020-05-14 23:37:18] [INFO] [Main] [line:21] [main] -> Dream Fight Server start service finish
+[2020-05-14 23:37:18] [INFO] [game.Service.GameRankLoop] [line:57] [work] -> level ranks sort, num is 30
+[2020-05-14 23:37:18] [INFO] [game.Service.GameRankLoop] [line:58] [work] -> money ranks sort, num is 1
+[2020-05-14 23:37:18] [INFO] [game.Service.GameRankLoop] [line:59] [work] -> battle ranks sort, num is 1
+[2020-05-14 23:37:28] [INFO] [game.Service.GameRankLoop] [line:57] [work] -> level ranks sort, num is 30
+[2020-05-14 23:37:28] [INFO] [game.Service.GameRankLoop] [line:58] [work] -> money ranks sort, num is 1
+[2020-05-14 23:37:28] [INFO] [game.Service.GameRankLoop] [line:59] [work] -> battle ranks sort, num is 1

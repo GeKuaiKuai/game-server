@@ -6,6 +6,8 @@ public class NotifyRoleInfo extends GameProtocol {
     public int dataId;
     public int weaponId;
     public String color;
+    public String boothName;
+    public boolean battle;
 
     @Override
     public String toString() {
@@ -15,6 +17,8 @@ public class NotifyRoleInfo extends GameProtocol {
                 ", dataId=" + dataId +
                 ", weaponId=" + weaponId +
                 ", color='" + color + '\'' +
+                ", boothName='" + boothName + '\'' +
+                ", battle=" + battle +
                 '}';
     }
 }

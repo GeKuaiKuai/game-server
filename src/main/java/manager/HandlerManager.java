@@ -5,6 +5,8 @@ import game.PlayerData;
 import handler.GameHandler;
 import io.OnlineContext;
 import io.github.classgraph.ScanResult;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import utils.Functions;
 
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class HandlerManager {
+    private static Logger logger = LogManager.getLogger(HandlerManager.class);
     private static HandlerManager instance = new HandlerManager();
     private Map<String, GameHandler> handlerClassMap = new HashMap<>();
     private List<String> loginWhiteList = new ArrayList<>();
@@ -29,7 +32,7 @@ public class HandlerManager {
                 }
             }
         }catch (Exception e){
-            System.out.println(e.toString());
+            logger.error("",e);
         }
 
         loginWhiteList.add("CLogin");
@@ -48,11 +51,17 @@ public class HandlerManager {
 
     public boolean validate(OnlineContext ctx, String name){
         if(!handlerClassMap.containsKey(name)){
-            System.out.println("[error]can not find protocol "+name);
+            logger.error("can not find protocol "+name);
             return false;
         }
         if(ctx.playerData == null || ctx.playerData.status != PlayerData.STATUS.NORMAL){
             if(!loginWhiteList.contains(name)){
+                return false;
+            }
+        }
+        if(ctx.playerData != null){
+            if(ctx.playerData.channel != ctx.channel){
+                logger.error(ctx.playerData.id+" bad bind channel");
                 return false;
             }
         }

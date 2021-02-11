@@ -1,7 +1,13 @@
 package game.Service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public abstract class GameFrameLoop implements Runnable {
+  private static Logger logger = LogManager.getLogger(GameFrameLoop.class);
+
   protected long EXE_PERIOD = 500;
+  abstract protected long getPeriod();
 
   public void start(){
     var thread = new Thread(this);
@@ -16,11 +22,12 @@ public abstract class GameFrameLoop implements Runnable {
     long sleepTime = 0;
     while (true) {
       startTime = System.currentTimeMillis();
-      nextTime = startTime + EXE_PERIOD;
+      nextTime = startTime + getPeriod();
       try {
         work();
       }catch (Exception e){
-        System.out.println(e.toString());
+        logger.error("",e);
+        e.printStackTrace();
       }
       endTime = System.currentTimeMillis();
       sleepTime = nextTime - endTime;

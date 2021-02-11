@@ -24,6 +24,11 @@ dependencies {
 
     // https://mvnrepository.com/artifact/io.github.classgraph/classgraph
     compile group: 'io.github.classgraph', name: 'classgraph', version: '4.8.65'
+
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1'
+
+
 }
 
 tasks.withType(JavaCompile) {

@@ -21,4 +21,10 @@ public class ServiceManager {
     public <T>T getLoop(Class<T> cls){
         return (T)loopMap.get(cls);
     }
+
+    public void start(){
+        loopMap.forEach((i,v) -> {
+            v.start();
+        });
+    }
 }

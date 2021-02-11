@@ -30,7 +30,7 @@ public class GameServerBoot {
           .option(ChannelOption.SO_BACKLOG, 128)
           .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-      ChannelFuture f = b.bind(12345).sync();
+      ChannelFuture f = b.bind(996).sync();
 
       f.channel().closeFuture().sync();
     } finally {

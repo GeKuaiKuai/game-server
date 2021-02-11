@@ -21,7 +21,6 @@ public class OnlineManager {
     }
 
     public OnlineContext createContext(Channel channel){
-        System.out.println("[Log]创建online context");
         var ctx = new OnlineContext();
         synchronized(ctxMapLock) {
             ctxMap.put(channel, ctx);

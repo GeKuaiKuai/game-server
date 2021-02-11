@@ -15,9 +15,11 @@ public class CSyncRoleInfoHandler extends GameHandler<CSyncRoleInfo> {
         roleData.dataId = data.data_id;
         roleData.weaponId = data.weapon_id;
         roleData.color = data.color;
+        roleData.battle = data.battle;
         if(ctx.playerData.roleData.isNeedSync(roleData)){
             ctx.playerData.roleData = roleData;
         }else{
+            ServiceManager.getInstance().getLoop(GameMapRsyncLoop.class).syncDataSequenceSoft(ctx.playerData);
             return;
         }
         ServiceManager.getInstance().getLoop(GameMapRsyncLoop.class).syncDataSequence(ctx.playerData);

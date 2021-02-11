@@ -1,17 +1,17 @@
 package game.Service;
 
+import game.MapBooth;
 import game.PlayerData;
-import protocol.GameProtocol;
-import protocol.NotifyComment;
-import protocol.NotifyPlayerLeave;
-import protocol.NotifyPlayerPosition;
-import protocol.NotifyRoleInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import protocol.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class GameMapRsyncLoop extends GameFrameLoop {
+  private static Logger logger = LogManager.getLogger(GameMapRsyncLoop.class);
   protected long EXE_PERIOD = 100;
   private final static int MAX_ROW = 40;
   private final static int MAX_COL = 40;
@@ -54,7 +54,34 @@ public class GameMapRsyncLoop extends GameFrameLoop {
   }
 
   public void removeOnlinePlayer(PlayerData playerData) {
-    playersData.remove(playerData.id);
+    var playerMapData = playersData.get(playerData.id);
+    if(playerMapData == null){
+      return;
+    }
+
+    if(playerMapData.mapBooth != null){
+      closeBooth(playerMapData.data);
+    }
+
+    playersData.remove(playerData.id); //从大表删除
+    var mapRect = playerMapData.mapRect;
+    if(mapRect != null){
+      mapRect.playerMapData.remove(playerMapData); //从rect里删除
+    }
+    var notifyOther = new NotifyPlayerLeave();
+    notifyOther.id = playerMapData.id;
+    var list = getNearbyPlayers(playerMapData.mapRect);
+
+    list.forEach(player -> {
+      if(player.data.channel != null){
+        player.data.channel.write(notifyOther);
+      }else{
+        logger.error("channel is not exist when notify leave. id="+player.id);
+        player.data.status = PlayerData.STATUS.DISCONNECTED;
+      }
+      player.sequenceList.remove(playerMapData.id);
+    });
+
   }
 
   // 同步位置
@@ -70,6 +97,55 @@ public class GameMapRsyncLoop extends GameFrameLoop {
     data.rsyncSequence[0] += 1;
     data.rsyncSequence[0] %= 65536;
   }
+
+  // 软同步信息
+  public void syncDataSequenceSoft(PlayerData playerData) {
+    var data = playersData.get(playerData.id);
+    if(data.rsyncSequence[0] == -1){
+      data.rsyncSequence[0] = 0;
+    }
+  }
+
+  // 创建摊位
+  public void createBooth(PlayerData playerData){
+    var data = playersData.get(playerData.id);
+    if(data.mapBooth != null){
+      return;
+    }
+    data.mapBooth = new MapBooth();
+    data.mapBooth.saveId = playerData.id;
+    syncDataSequence(playerData);
+  }
+
+  // 关闭摊位
+  public void closeBooth(PlayerData playerData){
+    var data = playersData.get(playerData.id);
+    if(data.mapBooth == null){
+      return;
+    }
+    for(var player:data.mapBooth.getVisitors()){
+      var notify = new SCloseBoothWindow();
+      notify.id = playerData.id;
+      if(player.isOnline() && player.channel!=null){
+        player.channel.write(notify);
+      }else{
+        logger.error("channel is not exist when notify booth close. id="+player.id);
+      }
+    }
+    data.mapBooth = null;
+    syncDataSequence(playerData);
+  }
+
+  // 获取摊位
+  public MapBooth getBooth(PlayerData playerData){
+    var data = playersData.get(playerData.id);
+    if(data == null){
+      return null;
+    }else{
+      return data.mapBooth;
+    }
+  }
+
 
   // 同步聊天
   public void syncComment(PlayerData playerData, Comment comment) {
@@ -103,6 +179,9 @@ public class GameMapRsyncLoop extends GameFrameLoop {
     PlayerData.RoleData roleData;
     //聊天数据
     LinkedBlockingQueue<Comment> comments = new LinkedBlockingQueue<Comment>();
+
+    //摊位数据
+    MapBooth mapBooth;
 
     // 同步标识
     int[] loopRsyncSequence = new int[]{-1,-1}; // 0 数据 1 位置
@@ -148,12 +227,13 @@ public class GameMapRsyncLoop extends GameFrameLoop {
     int mapId;
     Set<PlayerMapData> playerMapData;
 
+
     boolean isVisible(MapRect rect){
       if(rect == null){
         return false;
       }
       if(rect.mapId != mapId){
-        return true;
+        return false;
       }else{
         return Math.sqrt(Math.pow(rx-rect.rx,2) + Math.pow(ry-rect.ry, 2)) <= Math.sqrt(OFF*2);
       }
@@ -169,12 +249,18 @@ public class GameMapRsyncLoop extends GameFrameLoop {
   }
 
   private void updateAllPlayerPosition() {
+
     for (var kv : playersData.entrySet()) {
       updatePlayerPosition(kv.getValue());
     }
 
     for (var kv : playersData.entrySet()) {
-      kv.getValue().data.channel.flush();
+      if(kv.getValue().data.channel != null){
+        kv.getValue().data.channel.flush();
+      }else{
+        logger.error("channel is not exist when flush channel. id="+kv.getValue().id);
+      }
+
     }
   }
 
@@ -237,10 +323,19 @@ public class GameMapRsyncLoop extends GameFrameLoop {
           if(!mapRect.isVisible(newRect)){
             for(var playerData:mapRect.playerMapData){
               // 通知客户端删除
-              playerData.data.channel.write(notifyOther);
+              if(playerData.data.channel != null){
+                playerData.data.channel.write(notifyOther);
+              }else{
+                logger.error("channel is not exist when notify leave. id="+data.data.id);
+                playerData.data.status = PlayerData.STATUS.DISCONNECTED;
+              }
               var notifyMe = new NotifyPlayerLeave();
               notifyMe.id = playerData.id;
-              data.data.channel.write(notifyMe);
+              if(data.data.channel != null){
+                data.data.channel.write(notifyMe);
+              }else{
+                logger.error("channel is not exist when move. id="+data.data.id);
+              }
               // 周围玩家删除本玩家编号
               playerData.sequenceList.remove(data.id);
               // 本玩家删除周围玩家编号
@@ -259,18 +354,9 @@ public class GameMapRsyncLoop extends GameFrameLoop {
   }
 
   private boolean offlineSync(PlayerMapData playerMapData){
-    if(!playerMapData.data.isOnline()){
-      removeOnlinePlayer(playerMapData.data); //从大表里删除
-      var mapRect = playerMapData.mapRect;
-      mapRect.playerMapData.remove(playerMapData); //从rect里删除
-
-      var notifyOther = new NotifyPlayerLeave();
-      notifyOther.id = playerMapData.id;
-      var list = getNearbyPlayers(playerMapData.mapRect);
-      list.forEach(player -> {
-        player.data.channel.write(notifyOther);
-        player.sequenceList.remove(playerMapData.id);
-      });
+    if(!playerMapData.data.isOnline() || playerMapData.data.channel == null){
+      playerMapData.data.status = PlayerData.STATUS.DISCONNECTED;
+      removeOnlinePlayer(playerMapData.data);
       return true;
     }
     return false;
@@ -301,6 +387,10 @@ public class GameMapRsyncLoop extends GameFrameLoop {
     msg.dataId = data.roleData.dataId;
     msg.weaponId = data.roleData.weaponId;
     msg.color = data.roleData.color;
+    msg.battle = data.roleData.battle;
+    if(data.mapBooth != null){
+      msg.boothName = data.mapBooth.name;
+    }
     broadMsg(data, 0, msg);
   }
 
@@ -333,7 +423,11 @@ public class GameMapRsyncLoop extends GameFrameLoop {
   private void broadMsg(PlayerMapData sender, GameProtocol msg){
     var list = getNearbyPlayers(sender.mapRect);
     list.forEach(playerMapData -> {
-      playerMapData.data.channel.write(msg);
+      if(playerMapData.data.channel != null){
+        playerMapData.data.channel.write(msg);
+      }else{
+        logger.error("channel is not exist when direct broadMsg. id="+playerMapData.data.id);
+      }
     });
   }
 
@@ -341,11 +435,22 @@ public class GameMapRsyncLoop extends GameFrameLoop {
    * 给全部在线玩家同步
    */
   private void broadMsgToAllOnline(GameProtocol msg){
-    playersData.forEach((key, value) -> value.data.channel.write(msg));
+    playersData.forEach((key, value) -> {
+      if(value.data.channel == null){
+        value.data.status = PlayerData.STATUS.DISCONNECTED;
+      }else{
+        value.data.channel.write(msg);
+      }
+    });
   }
 
   private void sendMsg(PlayerMapData sender, PlayerMapData receiver, int kind, GameProtocol msg){
     if(sender == receiver){
+      return;
+    }
+
+    if(receiver.data.channel == null){
+      logger.error("channel is not exist when broadMsg. id="+receiver.data.id);
       return;
     }
     var sequences = receiver.sequenceList.computeIfAbsent(sender.id, k -> new int[]{-1, -1});
@@ -360,6 +465,9 @@ public class GameMapRsyncLoop extends GameFrameLoop {
    */
   private List<PlayerMapData> getNearbyPlayers(MapRect mapRect){
     List<PlayerMapData> res = new ArrayList<>();
+    if(mapRect == null){
+      return res;
+    }
     int rx = mapRect.rx;
     int ry = mapRect.ry;
     var mapRectArr = mapDatas.get(mapRect.mapId);
@@ -394,6 +502,11 @@ public class GameMapRsyncLoop extends GameFrameLoop {
       mapDatas.put(mapId, mapRect);
     }
     return mapDatas.get(mapId);
+  }
+
+  @Override
+  protected long getPeriod() {
+    return EXE_PERIOD;
   }
 
   @Override
